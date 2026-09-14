@@ -395,6 +395,8 @@ export default function Login() {
 
 
 
+
+// needed this below code to make the page work with supabase auth
 //  "use client";
 
 // import Link from "next/link";
