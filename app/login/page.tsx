@@ -12,6 +12,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { createClient } from "../../lib/supabase/client";
+import {
+  getLoginErrorMessage,
+  getSignupErrorMessage,
+} from "../../lib/auth-errors";
 
 export default function Login() {
   const router = useRouter();
@@ -47,8 +51,8 @@ export default function Login() {
         });
 
         if (error) {
-          // Do not reveal whether the account exists.
-          setError("The email or password you entered is incorrect.");
+          console.error("Login error:", error);
+          setError(getLoginErrorMessage(error.code));
           return;
         }
 
@@ -57,8 +61,6 @@ export default function Login() {
           return;
         }
 
-        // GT-002 only requires successful authentication.
-        // Farm onboarding belongs to GT-003.
         router.push("/dashboard");
         router.refresh();
 
@@ -79,47 +81,26 @@ export default function Login() {
       });
 
       if (error) {
-        const message = error.message.toLowerCase();
+        console.error("Signup error:", error);
 
-        if (
-          message.includes("already registered") ||
-          message.includes("already exists")
-        ) {
-          setError("That account already exists. Sign in instead.");
-        } else {
-          setError(error.message);
-        }
-
+        setError(getSignupErrorMessage(error.code));
         return;
       }
 
       /*
-       * Supabase can return an obfuscated existing user with no session
-       * when email confirmation is enabled.
+       * GT-002 requires a farmer to be signed in immediately
+       * after creating an account.
        *
-       * An empty identities array is the signal we use here to detect
-       * that case without exposing account existence to login attempts.
-       */
-      if (
-        data.user &&
-        !data.session &&
-        data.user.identities &&
-        data.user.identities.length === 0
-      ) {
-        setError("That account already exists. Sign in instead.");
-        return;
-      }
-
-      /*
-       * GT-002 requires the farmer to be signed in after registration.
-       * Therefore, a successful signup must return both a user and session.
+       * Therefore the Supabase project used for this ticket
+       * must have email confirmation disabled.
        */
       if (!data.user || !data.session) {
-        setError("Account could not be created. Please try again.");
+        setError(
+          "Your account was created, but we couldn't sign you in automatically. Please try again."
+        );
         return;
       }
 
-      // Signup succeeded and the farmer is authenticated.
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
@@ -139,7 +120,9 @@ export default function Login() {
   return (
     <main className="min-h-screen bg-[#f7f5ee] text-[#16251b]">
       <div className="grid min-h-screen lg:grid-cols-[.95fr_1.05fr]">
-        {/* LEFT SIDE */}
+        {/* --------------------------------
+            LEFT SIDE
+        -------------------------------- */}
         <section className="hidden bg-[#113f29] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-xl bg-white text-[#0d5b36]">
@@ -172,7 +155,9 @@ export default function Login() {
           </div>
         </section>
 
-        {/* RIGHT SIDE */}
+        {/* --------------------------------
+            RIGHT SIDE
+        -------------------------------- */}
         <section className="flex items-center justify-center px-5 py-12 sm:px-8">
           <div className="w-full max-w-[430px]">
             {/* Mobile logo */}
@@ -190,7 +175,9 @@ export default function Login() {
               </span>
             </Link>
 
-            {/* HEADER */}
+            {/* --------------------------------
+                HEADER
+            -------------------------------- */}
             <div className="text-xs font-bold uppercase tracking-[.18em] text-[#0d5b36]">
               {isLogin ? "Welcome back" : "Get started"}
             </div>
@@ -207,7 +194,9 @@ export default function Login() {
                 : "Join AgroSense and bring intelligent farming insights to your fingertips."}
             </p>
 
-            {/* LOGIN / SIGNUP TOGGLE */}
+            {/* --------------------------------
+                LOGIN / SIGNUP TOGGLE
+            -------------------------------- */}
             <div className="mt-7 grid grid-cols-2 rounded-xl bg-black/[0.04] p-1">
               <button
                 type="button"
@@ -234,7 +223,9 @@ export default function Login() {
               </button>
             </div>
 
-            {/* FORM */}
+            {/* --------------------------------
+                FORM
+            -------------------------------- */}
             <form onSubmit={handleSubmit} className="mt-7 space-y-4">
               {/* Full name — signup only */}
               {!isLogin && (
@@ -347,7 +338,9 @@ export default function Login() {
               </button>
             </form>
 
-            {/* BOTTOM SWITCH */}
+            {/* --------------------------------
+                BOTTOM SWITCH
+            -------------------------------- */}
             <p className="mt-7 text-center text-xs text-black/40">
               {isLogin ? (
                 <>
@@ -384,6 +377,8 @@ export default function Login() {
     </main>
   );
 }
+
+
 
 
 
